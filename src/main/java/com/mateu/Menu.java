@@ -1,22 +1,33 @@
 package com.mateu;
 
+import com.mateu.dao.AssignmentDao;
+import com.mateu.dao.Database;
+import com.mateu.domain.Assignment;
+
+import java.sql.Connection;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Scanner;
+
 
 public class Menu {
 
     private Scanner scanner;
-    private List<Assigment> catalogAssigments;
+    private Database database;
+    private Connection connection;
 
     public Menu() {
         scanner = new Scanner(System.in);
-        catalogAssigments = new ArrayList<>();
+    }
+
+    public void connect() {
+        database = new Database();
+        connection = database.getConnection();
     }
 
 
     public void showMenu() {
-        fillUpCatalog();
+        connect();
+
         String Option = null;
 
         do {
@@ -32,104 +43,97 @@ public class Menu {
 
             switch (Option) {
                 case "1":
-                    addAssignment();
+                    add();
                     break;
                 case "2":
-                    searchAssigments();
+                    searchAssignment();
                     break;
                 case "3":
-                    DeleteAssigments();
+                    deleteAssignment();
                 case "4":
                     modifyAssignment();
                     break;
                 case "5":
-                    finfAll();
+                    showAssignments();
                     break;
             }
         } while (!Option.equals("6"));
     }
 
-    public void addAssignment() {
+    public void add() {
         System.out.print("Name a new Assigment: ");
         String Name = scanner.nextLine();
         System.out.println("Description:");
         String Description = scanner.nextLine();
         System.out.println("Poscode Location: ");
         String Postcode = scanner.nextLine();
-        Assigment assigment = new Assigment(Name.trim(), Description.trim(), Postcode.trim());
-        catalogAssigments.add(assigment);
+        Assignment assignment = new Assignment(Name.trim(), Description.trim(), Postcode.trim());
+
+        AssignmentDao assignmentDao = new AssignmentDao(connection);
+        assignmentDao.add(assignment);
+        System.out.println("New Assignment has been added successfully");
 
     }
 
-    public void searchAssigments() {
-        boolean found = false;
-        System.out.println("Search By Title: ");
+    public void searchAssignment() {
+        System.out.println("Search By Name: ");
         String Name = scanner.nextLine();
-        for (Assigment assigment : catalogAssigments) {
-            if (assigment.getName().equals(Name)) {
-                System.out.println("Data found: ");
-                System.out.println(assigment.getName());
-                System.out.println(assigment.getDescription());
-                System.out.println(assigment.getPostcode());
-                found = true;
-            }
-        }
-        if (!found) {
+
+        AssignmentDao assignmentDao = new AssignmentDao(connection);
+        Assignment assignment = assignmentDao.findByTitle(Name);
+
+        if (assignment == null) {
             System.out.println("Could not be found");
-        } else {
-            System.out.println("This is the result:");
+            return;
         }
+
+        System.out.println(assignment.getName());
+        System.out.println(assignment.getDescription());
+        System.out.println(assignment.getPostcode());
     }
 
-    public void DeleteAssigments() {
-        System.out.println("Type the assigment to be deleted: ");
+    public void deleteAssignment() {
+        System.out.print("Titulo del libro a eliminar: ");
         String Name = scanner.nextLine();
-        boolean eliminado = catalogAssigments.removeIf(libro -> libro.getName().equals(Name));
-        if (eliminado)
-            System.out.println("The assignment has been Deleted properly");
+        AssignmentDao assignmentDao = new AssignmentDao(connection);
+        boolean deleted = assignmentDao.delete(Name);
+        if (deleted)
+            System.out.println("El libro se ha borrado correctamente");
         else
-            System.out.println("The assignment could no be deleted as does not exist");
+            System.out.println("El libro no se ha podido borrar. No existe");
     }
-
 
 
     public void modifyAssignment() {
-        boolean modifyed = false;
-        System.out.print("Name of the Assignment to be modified : ");
+        System.out.print("Assignment´s Name to be modified: ");
         String Name = scanner.nextLine();
-        for (Assigment assigment : catalogAssigments) {
-            if (assigment.getName().equalsIgnoreCase(Name)) {
-                System.out.print("New Name ");
-                String nuevoTitulo = scanner.nextLine();
-                System.out.print("New Description: ");
-                String nuevoAutor = scanner.nextLine();
-                System.out.print("New Postcode: ");
-                String nuevaEditorial = scanner.nextLine();
-                assigment.setName(nuevoTitulo);
-                assigment.setDescription(nuevoAutor);
-                assigment.setPostcode(nuevaEditorial);
-                System.out.println("Assignment Modified Properly!");
-                modifyed = true;
-            }
-        }
-        if (!modifyed)
-            System.out.println("Assignment could no be found!");
+        // TODO Buscar el libro antes de pedir los nuevos datos
+        System.out.print("New Name: ");
+        String newName = scanner.nextLine();
+        System.out.print("Nuew Description: ");
+        String newDescription = scanner.nextLine();
+        System.out.print("New Poscode: ");
+        String newPostcode = scanner.nextLine();
+        Assignment newAssignment = new Assignment(newName.trim(), newDescription.trim(), newPostcode.trim());
+
+        AssignmentDao assignmentDao = new AssignmentDao(connection);
+        boolean modified = assignmentDao.modify(Name, newAssignment);
+        if (modified)
+            System.out.println("El libro se ha modificado correctamente");
+        else
+            System.out.println("El libro no se ha podido modificar. No existe");
     }
 
-    public void finfAll() {
-        for (Assigment assigment : catalogAssigments) {
-            System.out.println(assigment.getName());
-            System.out.println(assigment.getDescription());
-            System.out.println(assigment.getPostcode());
-        }
-    }
 
-    public void fillUpCatalog() {
-        catalogAssigments.add(new Assigment("Assigment 1", "TEST", "www www"));
-        catalogAssigments.add(new Assigment("Assigment 2", "TEST", "QQQ QQQ"));
-        catalogAssigments.add(new Assigment("Assigment 3", "TEST", "RRR RRR"));
-        catalogAssigments.add(new Assigment("Assigment 4", "TEST", "GGG GGG"));
-        catalogAssigments.add(new Assigment("Assigment 5", "TEST", "BBB BBB"));
+    public void showAssignments() {
+
+        AssignmentDao assignmentDao = new AssignmentDao(connection);
+        // TODO Propagar la excepción al menú de usuario
+        ArrayList<Assignment> assignments = assignmentDao.findAll();
+        for (Assignment assignment : assignments) {
+            System.out.println(assignment.getName());
+        }
+
     }
 
 }

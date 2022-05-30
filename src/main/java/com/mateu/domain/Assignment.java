@@ -1,24 +1,25 @@
-package com.mateu;
+package com.mateu.domain;
 
-public class Assigment {
+public class Assignment {
 
     private String Name;
     private String Description;
     private String Postcode;
 
+    public Assignment() {}
 
-    public Assigment(String name, String description, String postcode) {
-        Name = name;
-        Description = description;
-        Postcode = postcode;
+    public Assignment(String name, String description, String postcode) {
+        this.Name = name;
+        this.Description = description;
+        this.Postcode = postcode;
     }
 
     public String getName() {
         return Name;
     }
 
-    public void setName(String name) {
-        Name = name;
+    public void setName(String Name) {
+        this.Name = Name;
     }
 
     public String getDescription() {
@@ -26,7 +27,7 @@ public class Assigment {
     }
 
     public void setDescription(String description) {
-        Description = description;
+        this.Description = description;
     }
 
     public String getPostcode() {
